@@ -61,7 +61,7 @@ steps.
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "device_functions.h"
-#include "device_atomic_functions.hpp"
+//#include "device_atomic_functions.hpp"
 
 #include <limits.h>
 #include <float.h>
@@ -130,11 +130,31 @@ void reduce_kernel(const float* const d_in, float* d_out, const size_t size, int
 	int index = threadIdx.x;
 
 	if (x >= size)
-		return;
-	
-	shared[index] = d_in[x];
-	
+	{
+		if (operationType == 0)
+			shared[index] = FLT_MAX;
+		else
+			shared[index] = -FLT_MAX;
+	}
+	else
+	{
+
+		shared[index] = d_in[x];
+	}
+
 	__syncthreads();
+
+	//For some reason
+	if (x >= size) {
+		if (index == 0) {
+			if (operationType == 0)
+				d_out[blockIdx.x] = FLT_MAX;
+			else
+				d_out[blockIdx.x] = -FLT_MAX;
+
+		}
+		return;
+	}
 
 	//Calculate the min/max/sum of each block
 	//shared[] is independent between blocks
